@@ -41,12 +41,134 @@ export default function SimpleTerminal() {
       setOutput(prev => [...prev, result]);
       addTerminalOutput(`$ ${command}`);
       addTerminalOutput(result);
+
+      // Handle state updates for delete commands
+      if (command.toLowerCase().includes('kubectl delete')) {
+        handleDeleteCommand(command);
+      }
+      
+      // Handle state updates for rollout restart commands
+      if (command.toLowerCase().includes('kubectl rollout restart')) {
+        handleRolloutRestartCommand(command);
+      }
+
+      // Automatically resolve chaos event for nginx-service if fixed
+      const { activeEvents, resolveChaosEvent } = useGameStore.getState();
+      if (
+        command.toLowerCase().includes('kubectl delete service nginx-service') ||
+        command.toLowerCase().includes('kubectl rollout restart deployment nginx-deployment')
+      ) {
+        const event = activeEvents.find(
+          (e) =>
+            (e.type === 'service-down' || e.type === 'dns-failure') &&
+            e.affectedResources.includes('nginx-service') &&
+            !e.resolved
+        );
+        if (event) {
+          resolveChaosEvent(event.id);
+        }
+      }
     } catch (error) {
       const errorMessage = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
       setOutput(prev => [...prev, errorMessage]);
       addTerminalOutput(`$ ${command}`);
       addTerminalOutput(errorMessage);
     }
+  };
+
+  const handleDeleteCommand = (command: string) => {
+    const parts = command.toLowerCase().split(' ');
+    const resourceType = parts[2]; // pods, services, deployments
+    const resourceName = parts[3]; // specific resource name
+
+    if (resourceType === 'pod' || resourceType === 'pods') {
+      // Remove the pod from the store
+      const updatedPods = pods.filter(pod => !pod.name.includes(resourceName));
+      useGameStore.setState({ pods: updatedPods });
+    } else if (resourceType === 'service' || resourceType === 'services') {
+      // Remove the service from the store
+      const updatedServices = services.filter(service => !service.name.includes(resourceName));
+      useGameStore.setState({ services: updatedServices });
+    } else if (resourceType === 'deployment' || resourceType === 'deployments') {
+      // Remove the deployment from the store
+      const updatedDeployments = deployments.filter(deployment => !deployment.name.includes(resourceName));
+      useGameStore.setState({ deployments: updatedDeployments });
+    }
+  };
+
+  const handleRolloutRestartCommand = (command: string) => {
+    const parts = command.toLowerCase().split(' ');
+    const deploymentName = parts[3]; // deployment name after "rollout restart"
+
+    // Find the deployment and update its status to restart it
+    const updatedDeployments = deployments.map(deployment => {
+      if (deployment.name.includes(deploymentName)) {
+        return {
+          ...deployment,
+          status: 'Progressing' as const,
+          ready: '0/1',
+          available: 0
+        };
+      }
+      return deployment;
+    });
+
+    // Also update related pods to show restart
+    const updatedPods = pods.map(pod => {
+      if (pod.name.includes(deploymentName)) {
+        return {
+          ...pod,
+          status: 'Pending' as const,
+          restarts: pod.restarts + 1,
+          logs: [
+            ...pod.logs,
+            '2024-01-01T12:05:00Z INFO: Pod restarting due to deployment rollout',
+            '2024-01-01T12:05:01Z INFO: Container starting...'
+          ]
+        };
+      }
+      return pod;
+    });
+
+    useGameStore.setState({ 
+      deployments: updatedDeployments,
+      pods: updatedPods
+    });
+
+    // Simulate the restart completing after a short delay
+    setTimeout(() => {
+      const finalDeployments = updatedDeployments.map(deployment => {
+        if (deployment.name.includes(deploymentName)) {
+          return {
+            ...deployment,
+            status: 'Available' as const,
+            ready: '1/1',
+            available: 1
+          };
+        }
+        return deployment;
+      });
+
+      const finalPods = updatedPods.map(pod => {
+        if (pod.name.includes(deploymentName)) {
+          return {
+            ...pod,
+            status: 'Running' as const,
+            logs: [
+              ...pod.logs,
+              '2024-01-01T12:05:05Z INFO: Pod restarted successfully',
+              '2024-01-01T12:05:06Z INFO: Application running normally'
+            ]
+          };
+        }
+        return pod;
+      });
+
+      useGameStore.setState({ 
+        deployments: finalDeployments,
+        pods: finalPods
+      });
+    }, 2000); // 2 second delay to simulate restart
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

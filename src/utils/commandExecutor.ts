@@ -217,7 +217,33 @@ function handleKubectlApply(parts: string[], clusterState: ClusterState): string
 }
 
 function handleKubectlDelete(parts: string[], clusterState: ClusterState): string {
-  return 'Resource deleted successfully.';
+  if (parts.length < 3) {
+    return 'Error: kubectl delete requires a resource type and name';
+  }
+  
+  const resourceType = parts[2];
+  const resourceName = parts[3];
+  
+  if (!resourceName) {
+    return 'Error: Resource name is required';
+  }
+  
+  // Check if the resource exists
+  let resourceExists = false;
+  
+  if (resourceType === 'pod' || resourceType === 'pods') {
+    resourceExists = clusterState.pods.some(pod => pod.name.includes(resourceName));
+  } else if (resourceType === 'service' || resourceType === 'services') {
+    resourceExists = clusterState.services.some(service => service.name.includes(resourceName));
+  } else if (resourceType === 'deployment' || resourceType === 'deployments') {
+    resourceExists = clusterState.deployments.some(deployment => deployment.name.includes(resourceName));
+  }
+  
+  if (!resourceExists) {
+    return `Error: ${resourceType} "${resourceName}" not found`;
+  }
+  
+  return `${resourceType} "${resourceName}" deleted successfully.`;
 }
 
 function handleKubectlScale(parts: string[], clusterState: ClusterState): string {
@@ -225,7 +251,29 @@ function handleKubectlScale(parts: string[], clusterState: ClusterState): string
 }
 
 function handleKubectlRollout(parts: string[], clusterState: ClusterState): string {
-  return 'Rollout completed successfully.';
+  if (parts.length < 4) {
+    return 'Error: kubectl rollout requires subcommand and resource name';
+  }
+  
+  const subcommand = parts[2];
+  const resourceType = parts[3];
+  const resourceName = parts[4];
+  
+  if (!resourceName) {
+    return 'Error: Resource name is required';
+  }
+  
+  if (subcommand === 'restart') {
+    // Check if the deployment exists
+    const deployment = clusterState.deployments.find(d => d.name.includes(resourceName));
+    if (!deployment) {
+      return `Error: deployment "${resourceName}" not found`;
+    }
+    
+    return `deployment.apps/${resourceName} restarted`;
+  }
+  
+  return `Rollout ${subcommand} completed successfully.`;
 }
 
 function getHelpText(): string {

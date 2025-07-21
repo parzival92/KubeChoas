@@ -320,7 +320,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
   
   generateRandomChaosEvent: () => {
-    const event = generateChaosEvent();
-    get().addChaosEvent(event);
+    const { activeEvents } = get();
+    if (activeEvents.length === 0) {
+      const event = generateChaosEvent();
+      get().addChaosEvent(event);
+    }
   }
 })); 
