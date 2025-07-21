@@ -117,16 +117,6 @@ export default function GameControls() {
           </div>
         </TooltipProvider>
       </div>
-      {/* Chaos Events Info */}
-      <div className="mt-6 p-4 bg-red-900/30 border border-red-500/30 rounded-xl shadow-inner">
-        <h3 className="text-lg font-semibold mb-2 text-red-400 flex items-center gap-2"><Flame className="w-5 h-5 animate-pulse" /> Chaos Events</h3>
-        <div className="text-sm text-gray-300 space-y-1">
-          <div>• <strong>Pod Crashes:</strong> Check logs and restart pods</div>
-          <div>• <strong>High CPU:</strong> Monitor resource usage</div>
-          <div>• <strong>DNS Failures:</strong> Check service connectivity</div>
-          <div>• <strong>Service Down:</strong> Verify endpoints and routing</div>
-        </div>
-      </div>
       {/* Score Details Modal */}
       <Dialog open={showScoreModal} onOpenChange={setShowScoreModal}>
         <DialogContent className="max-w-md bg-gray-900 border border-emerald-900/40 rounded-2xl shadow-2xl">

@@ -26,12 +26,12 @@ export default function Home() {
         {/* Top Row: Terminal + Controls */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           {/* Terminal Section */}
-          <Card className="bg-black/90 border border-emerald-900/40 shadow-lg flex flex-col justify-between">
+          <Card className="border border-emerald-900/40 shadow-lg flex flex-col h-full">
             <SimpleTerminal />
           </Card>
 
           {/* Game Controls */}
-          <Card className="bg-gray-900/90 border border-blue-900/40 shadow-lg flex flex-col justify-between">
+          <Card className="border border-blue-900/40 shadow-lg flex flex-col h-full">
             <GameControls />
           </Card>
         </div>

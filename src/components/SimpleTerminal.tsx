@@ -6,11 +6,16 @@ import { executeCommand } from '@/utils/commandExecutor';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Terminal } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+
+interface TerminalEntry {
+  command: string;
+  output: string;
+}
 
 export default function SimpleTerminal() {
   const [input, setInput] = useState('');
-  const [history, setHistory] = useState<string[]>([]);
-  const [output, setOutput] = useState<string[]>([]);
+  const [entries, setEntries] = useState<TerminalEntry[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   
   const { 
@@ -22,18 +27,17 @@ export default function SimpleTerminal() {
   } = useGameStore();
 
   useEffect(() => {
-    // Focus input on mount
+    // Focus input on mount and after each command
     if (inputRef.current) {
       inputRef.current.focus();
     }
-  }, []);
+  }, [entries.length]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
 
     const command = input.trim();
-    setHistory(prev => [...prev, `$ ${command}`]);
     setInput('');
 
     // Update score for command usage
@@ -41,7 +45,7 @@ export default function SimpleTerminal() {
 
     try {
       const result = await executeCommand(command, { pods, services, deployments });
-      setOutput(prev => [...prev, result]);
+      setEntries(prev => [...prev, { command, output: result }]);
       addTerminalOutput(`$ ${command}`);
       addTerminalOutput(result);
 
@@ -71,9 +75,19 @@ export default function SimpleTerminal() {
           resolveChaosEvent(event.id);
         }
       }
+      // Auto-resolve pod-crash events if rollout restart or delete is run for affected pod/deployment
+      activeEvents.forEach(event => {
+        if (
+          event.type === 'pod-crash' &&
+          event.affectedResources.some(resource => command.toLowerCase().includes(resource.toLowerCase())) &&
+          !event.resolved
+        ) {
+          resolveChaosEvent(event.id);
+        }
+      });
     } catch (error) {
       const errorMessage = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      setOutput(prev => [...prev, errorMessage]);
+      setEntries(prev => [...prev, { command, output: errorMessage }]);
       addTerminalOutput(`$ ${command}`);
       addTerminalOutput(errorMessage);
     }
@@ -181,52 +195,71 @@ export default function SimpleTerminal() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-black/90 border border-emerald-700/60 rounded-2xl shadow-emerald-900/40 shadow-xl backdrop-blur-md">
-      {/* Terminal Header */}
-      <div className="mb-4 flex items-center gap-2 border-b border-emerald-900/40 pb-2">
-        <Terminal className="w-5 h-5 text-emerald-400 animate-pulse" />
-        <div className="text-green-400 font-bold">Welcome to KubeChaos Terminal!</div>
-      </div>
-      <div className="text-gray-400 mb-2 text-xs">Type <span className="text-emerald-300 font-mono">help</span> for available commands. Type <span className="text-emerald-300 font-mono">kubectl get pods</span> to see your cluster pods.</div>
-      {/* Terminal Output */}
-      <div className="flex-1 overflow-y-auto mb-4 space-y-1 custom-scrollbar pr-1">
-        {history.map((line, index) => (
-          <div key={`history-${index}`} className="text-green-400">{line}</div>
+    <div className="flex flex-col glass border border-blue-900/40 shadow-lg rounded-xl font-mono text-[15px] h-96 md:h-[500px] max-h-[70vh] min-h-[250px]">
+      <div className="flex-1 overflow-y-auto px-3 pt-2 pb-1 custom-scrollbar">
+        {/* Initial welcome/help text */}
+        <div className="mb-4 p-4 rounded-lg bg-emerald-900/20 border border-emerald-400/20 space-y-2">
+          <div className="text-2xl font-extrabold text-emerald-300 drop-shadow">Welcome to <span className="text-emerald-400">KubeChaos Terminal!</span></div>
+          <div className="text-base text-gray-200 font-semibold">
+            Type <span className="text-blue-400 font-bold">help</span> for available commands.
+          </div>
+          <div className="text-base text-blue-300 font-semibold">
+            Type <span className="text-blue-400 font-extrabold">kubectl get pods</span> to see your cluster pods.
+          </div>
+        </div>
+        {entries.map((entry, idx) => (
+          <div key={idx} className="">
+            <div className="flex items-center">
+              <span className="text-[#6A9955] select-none">$</span>
+              <span className="text-white ml-2">{entry.command}</span>
+            </div>
+            <div className="ml-6">
+              {entry.output.split('\n').map((subLine, subIdx) => {
+                // VSCode-like color coding for output
+                if (/error|failed|not found|unknown/i.test(subLine)) {
+                  return <pre key={subIdx} className="text-red-400 whitespace-pre">{subLine}</pre>;
+                }
+                if (/warn|warning/i.test(subLine)) {
+                  return <pre key={subIdx} className="text-yellow-300 whitespace-pre">{subLine}</pre>;
+                }
+                if (/info|success|available|running/i.test(subLine)) {
+                  return <pre key={subIdx} className="text-blue-300 whitespace-pre">{subLine}</pre>;
+                }
+                return <pre key={subIdx} className="text-white whitespace-pre">{subLine}</pre>;
+              })}
+            </div>
+          </div>
         ))}
-        {output.map((line, index) => (
-          <pre key={`output-${index}`} className="text-white whitespace-pre-wrap font-mono">{line}</pre>
-        ))}
       </div>
-      {/* Terminal Input */}
-      <form onSubmit={handleSubmit} className="flex items-center border-t border-emerald-900/40 pt-2">
-        <span className="text-green-400 mr-2 font-mono">$</span>
+      <form onSubmit={handleSubmit} className="flex items-center border-t border-[#333] px-3 py-2 bg-transparent">
+        <span className="text-[#6A9955] select-none">$</span>
         <input
           ref={inputRef}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 bg-transparent text-green-400 outline-none border-none font-mono text-base placeholder:text-emerald-700 focus:ring-0 animate-blink-cursor"
-          placeholder="Enter command..."
+          className="flex-1 bg-transparent text-white outline-none border-none font-mono text-[15px] ml-2 tracking-wide focus:ring-0 block-cursor"
           autoComplete="off"
           spellCheck={false}
+          style={{ caretColor: '#fff' }}
         />
       </form>
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;
-          background: #111;
+          background: #222;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #1a2e1a;
+          background: #333;
           border-radius: 4px;
         }
-        @keyframes blink {
-          0%, 100% { border-right: 2px solid #34d399; }
-          50% { border-right: 2px solid transparent; }
+        .block-cursor {
+          caret-shape: block;
+          caret-color: #fff;
         }
-        .animate-blink-cursor {
-          animation: blink 1s step-end infinite;
+        input.block-cursor::selection {
+          background: #264f78;
         }
       `}</style>
     </div>
