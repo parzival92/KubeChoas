@@ -82,42 +82,42 @@ function handleKubectlGet(resource: string, namespace: string, clusterState: Clu
   switch (resource) {
     case 'pods':
     case 'pod':
-      output = 'NAME                                READY   STATUS    RESTARTS   AGE\n';
+      output = 'NAME'.padEnd(35) + 'READY'.padEnd(8) + 'STATUS'.padEnd(12) + 'RESTARTS'.padEnd(10) + 'AGE' + '\n';
       clusterState.pods.forEach(pod => {
-        output += `${pod.name} ${pod.ready} ${pod.status} ${pod.restarts} ${pod.age}\n`;
+        output += pod.name.padEnd(35) + pod.ready.padEnd(8) + pod.status.padEnd(12) + String(pod.restarts).padEnd(10) + pod.age + '\n';
       });
       break;
       
     case 'services':
     case 'service':
     case 'svc':
-      output = 'NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE\n';
+      output = 'NAME'.padEnd(18) + 'TYPE'.padEnd(12) + 'CLUSTER-IP'.padEnd(16) + 'EXTERNAL-IP'.padEnd(14) + 'PORT(S)'.padEnd(12) + 'AGE' + '\n';
       clusterState.services.forEach(svc => {
-        output += `${svc.name} ${svc.type} ${svc.clusterIp} ${svc.externalIp} ${svc.ports} ${svc.age}\n`;
+        output += svc.name.padEnd(18) + svc.type.padEnd(12) + svc.clusterIp.padEnd(16) + svc.externalIp.padEnd(14) + svc.ports.padEnd(12) + svc.age + '\n';
       });
       break;
       
     case 'deployments':
     case 'deployment':
     case 'deploy':
-      output = 'NAME               READY   UP-TO-DATE   AVAILABLE   AGE\n';
+      output = 'NAME'.padEnd(22) + 'READY'.padEnd(10) + 'UP-TO-DATE'.padEnd(12) + 'AVAILABLE'.padEnd(12) + 'AGE' + '\n';
       clusterState.deployments.forEach(deploy => {
-        output += `${deploy.name} ${deploy.ready} ${deploy.upToDate} ${deploy.available} ${deploy.age}\n`;
+        output += deploy.name.padEnd(22) + deploy.ready.padEnd(10) + String(deploy.upToDate).padEnd(12) + String(deploy.available).padEnd(12) + deploy.age + '\n';
       });
       break;
       
     case 'nodes':
-      output = 'NAME       STATUS   ROLES           AGE   VERSION\n';
-      output += 'node-1     Ready    control-plane   2d    v1.28.0\n';
-      output += 'node-2     Ready    <none>          2d    v1.28.0\n';
+      output = 'NAME'.padEnd(12) + 'STATUS'.padEnd(10) + 'ROLES'.padEnd(18) + 'AGE'.padEnd(6) + 'VERSION' + '\n';
+      output += 'node-1'.padEnd(12) + 'Ready'.padEnd(10) + 'control-plane'.padEnd(18) + '2d'.padEnd(6) + 'v1.28.0' + '\n';
+      output += 'node-2'.padEnd(12) + 'Ready'.padEnd(10) + '<none>'.padEnd(18) + '2d'.padEnd(6) + 'v1.28.0' + '\n';
       break;
       
     case 'namespaces':
     case 'ns':
-      output = 'NAME              STATUS   AGE\n';
-      output += 'default           Active   2d\n';
-      output += 'kube-system       Active   2d\n';
-      output += 'kube-public       Active   2d\n';
+      output = 'NAME'.padEnd(20) + 'STATUS'.padEnd(10) + 'AGE' + '\n';
+      output += 'default'.padEnd(20) + 'Active'.padEnd(10) + '2d' + '\n';
+      output += 'kube-system'.padEnd(20) + 'Active'.padEnd(10) + '2d' + '\n';
+      output += 'kube-public'.padEnd(20) + 'Active'.padEnd(10) + '2d' + '\n';
       break;
       
     case 'all':

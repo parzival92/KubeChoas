@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { executeCommand } from '@/utils/commandExecutor';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { Terminal } from 'lucide-react';
 
 export default function SimpleTerminal() {
   const [input, setInput] = useState('');
@@ -178,38 +181,54 @@ export default function SimpleTerminal() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-black text-green-400 font-mono text-sm p-4">
+    <div className="h-full flex flex-col bg-black/90 border border-emerald-700/60 rounded-2xl shadow-emerald-900/40 shadow-xl backdrop-blur-md">
       {/* Terminal Header */}
-      <div className="mb-4">
+      <div className="mb-4 flex items-center gap-2 border-b border-emerald-900/40 pb-2">
+        <Terminal className="w-5 h-5 text-emerald-400 animate-pulse" />
         <div className="text-green-400 font-bold">Welcome to KubeChaos Terminal!</div>
-        <div className="text-gray-400">Type &quot;help&quot; for available commands.</div>
-        <div className="text-gray-400">Type &quot;kubectl get pods&quot; to see your cluster pods.</div>
       </div>
-
+      <div className="text-gray-400 mb-2 text-xs">Type <span className="text-emerald-300 font-mono">help</span> for available commands. Type <span className="text-emerald-300 font-mono">kubectl get pods</span> to see your cluster pods.</div>
       {/* Terminal Output */}
-      <div className="flex-1 overflow-y-auto mb-4 space-y-1">
+      <div className="flex-1 overflow-y-auto mb-4 space-y-1 custom-scrollbar pr-1">
         {history.map((line, index) => (
           <div key={`history-${index}`} className="text-green-400">{line}</div>
         ))}
         {output.map((line, index) => (
-          <div key={`output-${index}`} className="text-white whitespace-pre-wrap">{line}</div>
+          <pre key={`output-${index}`} className="text-white whitespace-pre-wrap font-mono">{line}</pre>
         ))}
       </div>
-
       {/* Terminal Input */}
-      <form onSubmit={handleSubmit} className="flex items-center">
-        <span className="text-green-400 mr-2">$</span>
+      <form onSubmit={handleSubmit} className="flex items-center border-t border-emerald-900/40 pt-2">
+        <span className="text-green-400 mr-2 font-mono">$</span>
         <input
           ref={inputRef}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 bg-transparent text-green-400 outline-none border-none"
+          className="flex-1 bg-transparent text-green-400 outline-none border-none font-mono text-base placeholder:text-emerald-700 focus:ring-0 animate-blink-cursor"
           placeholder="Enter command..."
           autoComplete="off"
+          spellCheck={false}
         />
       </form>
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+          background: #111;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #1a2e1a;
+          border-radius: 4px;
+        }
+        @keyframes blink {
+          0%, 100% { border-right: 2px solid #34d399; }
+          50% { border-right: 2px solid transparent; }
+        }
+        .animate-blink-cursor {
+          animation: blink 1s step-end infinite;
+        }
+      `}</style>
     </div>
   );
 } 
