@@ -26,20 +26,20 @@ export default function Home() {
         {/* Top Row: Terminal + Controls */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           {/* Terminal Section */}
-          <Card className="border border-emerald-900/40 shadow-lg flex flex-col h-full">
+          <div className="flex flex-col h-full">
             <SimpleTerminal />
-          </Card>
+          </div>
 
           {/* Game Controls */}
-          <Card className="border border-blue-900/40 shadow-lg flex flex-col h-full">
+          <div className="flex flex-col h-full">
             <GameControls />
-          </Card>
+          </div>
         </div>
 
         {/* Cluster Dashboard - full width below */}
-        <Card className="mt-8 bg-gray-900/90 border border-purple-900/40 shadow-lg">
+        <div className="mt-8">
           <ClusterDashboard />
-        </Card>
+        </div>
       </div>
       {/* Game Loop - handles chaos events */}
       <GameLoop />

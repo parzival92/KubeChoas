@@ -3,10 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { executeCommand } from '@/utils/commandExecutor';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Terminal } from 'lucide-react';
-import { Label } from '@/components/ui/label';
+import { Terminal, Maximize2, Minimize2, X } from 'lucide-react';
 
 interface TerminalEntry {
   command: string;
@@ -16,20 +13,35 @@ interface TerminalEntry {
 export default function SimpleTerminal() {
   const [input, setInput] = useState('');
   const [entries, setEntries] = useState<TerminalEntry[]>([]);
+  const [isMaximized, setIsMaximized] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  
-  const { 
-    pods, 
-    services, 
-    deployments, 
-    addTerminalOutput, 
-    updateScore
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const {
+    pods,
+    services,
+    deployments,
+    activeEvents,
+    addTerminalOutput,
+    updateScore,
+    resolveChaosEvent,
+    updatePod,
+    updateService,
+    updateDeployment
   } = useGameStore();
 
+  const [loginTime, setLoginTime] = useState<string>('');
+  const terminalContentRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
+    setLoginTime(new Date().toUTCString());
     // Focus input on mount and after each command
     if (inputRef.current) {
       inputRef.current.focus();
+    }
+    // Scroll to bottom within terminal container only
+    if (bottomRef.current && terminalContentRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [entries.length]);
 
@@ -40,152 +52,45 @@ export default function SimpleTerminal() {
     const command = input.trim();
     setInput('');
 
+    // Handle clear command specially
+    if (command.toLowerCase() === 'clear') {
+      setEntries([]);
+      addTerminalOutput('$ clear');
+      addTerminalOutput('Terminal cleared');
+      return;
+    }
+
     // Update score for command usage
     updateScore({ commandsUsed: useGameStore.getState().score.commandsUsed + 1 });
 
+    // Create actions object for command executor
+    const actions = {
+      resolveChaosEvent,
+      updatePod,
+      updateService,
+      updateDeployment,
+      setPods: (newPods: any[]) => useGameStore.setState({ pods: newPods }),
+      setServices: (newServices: any[]) => useGameStore.setState({ services: newServices }),
+      setDeployments: (newDeployments: any[]) => useGameStore.setState({ deployments: newDeployments })
+    };
+
     try {
-      const result = await executeCommand(command, { pods, services, deployments });
+      const result = await executeCommand(
+        command,
+        { pods, services, deployments, activeEvents },
+        actions
+      );
+
       setEntries(prev => [...prev, { command, output: result }]);
       addTerminalOutput(`$ ${command}`);
       addTerminalOutput(result);
 
-      // Handle state updates for delete commands
-      if (command.toLowerCase().includes('kubectl delete')) {
-        handleDeleteCommand(command);
-      }
-      
-      // Handle state updates for rollout restart commands
-      if (command.toLowerCase().includes('kubectl rollout restart')) {
-        handleRolloutRestartCommand(command);
-      }
-
-      // Automatically resolve chaos event for nginx-service if fixed
-      const { activeEvents, resolveChaosEvent } = useGameStore.getState();
-      if (
-        command.toLowerCase().includes('kubectl delete service nginx-service') ||
-        command.toLowerCase().includes('kubectl rollout restart deployment nginx-deployment')
-      ) {
-        const event = activeEvents.find(
-          (e) =>
-            (e.type === 'service-down' || e.type === 'dns-failure') &&
-            e.affectedResources.includes('nginx-service') &&
-            !e.resolved
-        );
-        if (event) {
-          resolveChaosEvent(event.id);
-        }
-      }
-      // Auto-resolve pod-crash events if rollout restart or delete is run for affected pod/deployment
-      activeEvents.forEach(event => {
-        if (
-          event.type === 'pod-crash' &&
-          event.affectedResources.some(resource => command.toLowerCase().includes(resource.toLowerCase())) &&
-          !event.resolved
-        ) {
-          resolveChaosEvent(event.id);
-        }
-      });
     } catch (error) {
       const errorMessage = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
       setEntries(prev => [...prev, { command, output: errorMessage }]);
       addTerminalOutput(`$ ${command}`);
       addTerminalOutput(errorMessage);
     }
-  };
-
-  const handleDeleteCommand = (command: string) => {
-    const parts = command.toLowerCase().split(' ');
-    const resourceType = parts[2]; // pods, services, deployments
-    const resourceName = parts[3]; // specific resource name
-
-    if (resourceType === 'pod' || resourceType === 'pods') {
-      // Remove the pod from the store
-      const updatedPods = pods.filter(pod => !pod.name.includes(resourceName));
-      useGameStore.setState({ pods: updatedPods });
-    } else if (resourceType === 'service' || resourceType === 'services') {
-      // Remove the service from the store
-      const updatedServices = services.filter(service => !service.name.includes(resourceName));
-      useGameStore.setState({ services: updatedServices });
-    } else if (resourceType === 'deployment' || resourceType === 'deployments') {
-      // Remove the deployment from the store
-      const updatedDeployments = deployments.filter(deployment => !deployment.name.includes(resourceName));
-      useGameStore.setState({ deployments: updatedDeployments });
-    }
-  };
-
-  const handleRolloutRestartCommand = (command: string) => {
-    const parts = command.toLowerCase().split(' ');
-    const deploymentName = parts[3]; // deployment name after "rollout restart"
-
-    // Find the deployment and update its status to restart it
-    const updatedDeployments = deployments.map(deployment => {
-      if (deployment.name.includes(deploymentName)) {
-        return {
-          ...deployment,
-          status: 'Progressing' as const,
-          ready: '0/1',
-          available: 0
-        };
-      }
-      return deployment;
-    });
-
-    // Also update related pods to show restart
-    const updatedPods = pods.map(pod => {
-      if (pod.name.includes(deploymentName)) {
-        return {
-          ...pod,
-          status: 'Pending' as const,
-          restarts: pod.restarts + 1,
-          logs: [
-            ...pod.logs,
-            '2024-01-01T12:05:00Z INFO: Pod restarting due to deployment rollout',
-            '2024-01-01T12:05:01Z INFO: Container starting...'
-          ]
-        };
-      }
-      return pod;
-    });
-
-    useGameStore.setState({ 
-      deployments: updatedDeployments,
-      pods: updatedPods
-    });
-
-    // Simulate the restart completing after a short delay
-    setTimeout(() => {
-      const finalDeployments = updatedDeployments.map(deployment => {
-        if (deployment.name.includes(deploymentName)) {
-          return {
-            ...deployment,
-            status: 'Available' as const,
-            ready: '1/1',
-            available: 1
-          };
-        }
-        return deployment;
-      });
-
-      const finalPods = updatedPods.map(pod => {
-        if (pod.name.includes(deploymentName)) {
-          return {
-            ...pod,
-            status: 'Running' as const,
-            logs: [
-              ...pod.logs,
-              '2024-01-01T12:05:05Z INFO: Pod restarted successfully',
-              '2024-01-01T12:05:06Z INFO: Application running normally'
-            ]
-          };
-        }
-        return pod;
-      });
-
-      useGameStore.setState({ 
-        deployments: finalDeployments,
-        pods: finalPods
-      });
-    }, 2000); // 2 second delay to simulate restart
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -195,73 +100,104 @@ export default function SimpleTerminal() {
   };
 
   return (
-    <div className="flex flex-col glass border border-blue-900/40 shadow-lg rounded-xl font-mono text-[15px] h-96 md:h-[500px] max-h-[70vh] min-h-[250px]">
-      <div className="flex-1 overflow-y-auto px-3 pt-2 pb-1 custom-scrollbar">
-        {/* Initial welcome/help text */}
-        <div className="mb-4 p-4 rounded-lg bg-emerald-900/20 border border-emerald-400/20 space-y-2">
-          <div className="text-2xl font-extrabold text-emerald-300 drop-shadow">Welcome to <span className="text-emerald-400">KubeChaos Terminal!</span></div>
-          <div className="text-base text-gray-200 font-semibold">
-            Type <span className="text-blue-400 font-bold">help</span> for available commands.
-          </div>
-          <div className="text-base text-blue-300 font-semibold">
-            Type <span className="text-blue-400 font-extrabold">kubectl get pods</span> to see your cluster pods.
-          </div>
+    <div className={`flex flex-col w-full ${isMaximized ? 'h-[80vh]' : 'h-[500px]'} rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-[#0d1117]/90 backdrop-blur-xl font-mono text-sm transition-all duration-300`}>
+      {/* Terminal Header (Mac-style) */}
+      <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-b from-[#2a2e34] to-[#1a1d21] border-b border-white/5">
+        <div className="flex items-center gap-2">
+          <button className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:bg-[#ff5f56]/80 transition-colors focus:outline-none group flex items-center justify-center" aria-label="Close">
+            <X className="w-2 h-2 text-[#4d0000] opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+          <button className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123] hover:bg-[#ffbd2e]/80 transition-colors focus:outline-none group flex items-center justify-center" aria-label="Minimize">
+            <Minimize2 className="w-2 h-2 text-[#4d3300] opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+          <button
+            className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] hover:bg-[#27c93f]/80 transition-colors focus:outline-none group flex items-center justify-center"
+            aria-label="Maximize"
+            onClick={() => setIsMaximized(!isMaximized)}
+          >
+            <Maximize2 className="w-2 h-2 text-[#004d00] opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
         </div>
+        <div className="flex items-center gap-2 text-gray-400 text-xs font-medium">
+          <Terminal className="w-3 h-3" />
+          <span>root@k8s-master:~</span>
+        </div>
+        <div className="flex items-center gap-2 opacity-0"> {/* Spacer to center title */}
+          <div className="w-3 h-3" />
+          <div className="w-3 h-3" />
+          <div className="w-3 h-3" />
+        </div>
+      </div>
+
+      {/* Terminal Content */}
+      <div
+        ref={terminalContentRef}
+        className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar"
+        onClick={() => inputRef.current?.focus()}
+      >
+        {/* Welcome Message */}
+        <div className="mb-6 space-y-1">
+          <div className="text-emerald-400 font-bold">Welcome to KubeChaos v1.0.0</div>
+          <div className="text-gray-400">Type <span className="text-blue-400">'help'</span> to see available commands.</div>
+          <div className="text-gray-400">System status: <span className="text-emerald-400">ONLINE</span></div>
+          <div className="text-gray-500 text-xs mt-2">Last login: {loginTime} on ttys001</div>
+        </div>
+
+        {/* History */}
         {entries.map((entry, idx) => (
-          <div key={idx} className="">
-            <div className="flex items-center">
-              <span className="text-[#6A9955] select-none">$</span>
-              <span className="text-white ml-2">{entry.command}</span>
+          <div key={idx} className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-emerald-500 font-bold">root@k8s-master:~$</span>
+              <span className="text-gray-100">{entry.command}</span>
             </div>
-            <div className="ml-6">
-              {entry.output.split('\n').map((subLine, subIdx) => {
-                // VSCode-like color coding for output
-                if (/error|failed|not found|unknown/i.test(subLine)) {
-                  return <pre key={subIdx} className="text-red-400 whitespace-pre">{subLine}</pre>;
-                }
-                if (/warn|warning/i.test(subLine)) {
-                  return <pre key={subIdx} className="text-yellow-300 whitespace-pre">{subLine}</pre>;
-                }
-                if (/info|success|available|running/i.test(subLine)) {
-                  return <pre key={subIdx} className="text-blue-300 whitespace-pre">{subLine}</pre>;
-                }
-                return <pre key={subIdx} className="text-white whitespace-pre">{subLine}</pre>;
+            <div className="pl-0 text-gray-300 whitespace-pre-wrap leading-relaxed">
+              {entry.output.split('\n').map((line, i) => {
+                if (line.includes('Error:')) return <span key={i} className="text-red-400 block">{line}</span>;
+                if (line.includes('WARN:')) return <span key={i} className="text-yellow-400 block">{line}</span>;
+                if (line.includes('INFO:')) return <span key={i} className="text-blue-300 block">{line}</span>;
+                if (line.includes('SUCCESS:')) return <span key={i} className="text-emerald-400 block">{line}</span>;
+                if (line.startsWith('NAME')) return <span key={i} className="text-gray-500 font-bold block border-b border-gray-700 pb-1 mb-1">{line}</span>;
+                return <span key={i} className="block">{line}</span>;
               })}
             </div>
           </div>
         ))}
+
+        {/* Input Line */}
+        <div className="flex items-center gap-2 pt-2">
+          <span className="text-emerald-500 font-bold">root@k8s-master:~$</span>
+          <form onSubmit={handleSubmit} className="flex-1 flex items-center">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full bg-transparent border-none outline-none text-gray-100 placeholder-gray-600"
+              autoComplete="off"
+              spellCheck={false}
+              autoFocus
+            />
+            <span className="w-2 h-5 bg-emerald-500 animate-pulse ml-1"></span>
+          </form>
+        </div>
+        <div ref={bottomRef} />
       </div>
-      <form onSubmit={handleSubmit} className="flex items-center border-t border-[#333] px-3 py-2 bg-transparent">
-        <span className="text-[#6A9955] select-none">$</span>
-        <input
-          ref={inputRef}
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="flex-1 bg-transparent text-white outline-none border-none font-mono text-[15px] ml-2 tracking-wide focus:ring-0 block-cursor"
-          autoComplete="off"
-          spellCheck={false}
-          style={{ caretColor: '#fff' }}
-        />
-      </form>
+
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-          background: #222;
+          width: 10px;
+          background: #0d1117;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #333;
-          border-radius: 4px;
+          background: #30363d;
+          border-radius: 5px;
+          border: 2px solid #0d1117;
         }
-        .block-cursor {
-          caret-shape: block;
-          caret-color: #fff;
-        }
-        input.block-cursor::selection {
-          background: #264f78;
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #484f58;
         }
       `}</style>
     </div>
   );
-} 
+}
