@@ -250,7 +250,7 @@ function handleKubectlDescribe(parts: string[], namespace: string | null, cluste
   const resourceType = parts[1] || 'pod';
 
   // Find the actual resource to get real status
-  let resource: any;
+  let resource: Pod | Service | Deployment | undefined;
   if (resourceType.includes('pod')) {
     resource = namespace
       ? clusterState.pods.find(p => p.name.includes(resourceName) && p.namespace === namespace)
