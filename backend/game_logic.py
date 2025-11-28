@@ -207,6 +207,9 @@ class GameManager:
                 output = f"Attempting to resolve event {event_id}..."
             else:
                 output = "Usage: resolve <event-id>"
+        elif cmd == "clear":
+            self.terminal_history = []
+            return ""
         else:
             output = f"Command not found: {cmd}"
             
