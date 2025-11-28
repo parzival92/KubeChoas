@@ -1,219 +1,401 @@
-import random
-import uuid
+"""
+Game Logic Manager for KubeChaos
+Integrates with Kubernetes and Chaos Mesh for real chaos engineering
+"""
+
+from models import *
+from k8s_client import KubernetesClient
+from chaos_mesh_client import ChaosMeshClient
+from game_scenarios import *
+from kubernetes import client
+from typing import Dict, List, Optional, Any
 from datetime import datetime
-from typing import List, Optional, Dict
-from models import (
-    Pod, Service, Deployment, ChaosEvent, GameScore, GameState,
-    PodStatus, ServiceStatus, DeploymentStatus, ChaosEventType, ChaosSeverity
-)
+import logging
+import os
+
+logger = logging.getLogger(__name__)
+
 
 class GameManager:
+    """Main game logic manager"""
+    
     def __init__(self):
-        self.is_game_running = False
-        self.game_start_time: Optional[datetime] = None
-        self.chaos_events: List[ChaosEvent] = []
-        self.active_events: List[ChaosEvent] = []
-        self.terminal_history: List[str] = [
-            'Welcome to KubeChaos Terminal!',
-            'Type "help" for available commands.',
-            'Type "kubectl get pods" to see your cluster pods.',
-            ''
-        ]
-        self.current_command = ''
-        self.score = GameScore(
-            totalScore=0,
-            mttr=0,
-            commandsUsed=0,
-            incidentsResolved=0,
-            proactiveChecks=0
-        )
-        self.pods = self._init_pods()
-        self.services = self._init_services()
-        self.deployments = self._init_deployments()
-
-    def _init_pods(self) -> List[Pod]:
-        return [
-            Pod(id='pod-prod-1', name='web-frontend-7d9f8c6b5-abc12', namespace='production', status=PodStatus.Running, ready='1/1', restarts=0, age='3h', cpu=0.3, memory=128, logs=['[INFO] Next.js server started on port 3000', '[INFO] Ready to handle requests']),
-            Pod(id='pod-prod-2', name='web-frontend-7d9f8c6b5-def34', namespace='production', status=PodStatus.Running, ready='1/1', restarts=0, age='3h', cpu=0.2, memory=125, logs=['[INFO] Next.js server started on port 3000', '[INFO] Ready to handle requests']),
-            Pod(id='pod-prod-3', name='web-frontend-7d9f8c6b5-ghi56', namespace='production', status=PodStatus.Running, ready='1/1', restarts=0, age='3h', cpu=0.25, memory=130, logs=['[INFO] Next.js server started on port 3000', '[INFO] Ready to handle requests']),
-            Pod(id='pod-prod-4', name='api-gateway-5c8d9e4f2-jkl78', namespace='production', status=PodStatus.Running, ready='1/1', restarts=0, age='2h', cpu=0.5, memory=256, logs=['[INFO] API Gateway listening on :8080', '[INFO] Connected to product-service', '[INFO] Connected to cart-service']),
-            Pod(id='pod-prod-5', name='api-gateway-5c8d9e4f2-mno90', namespace='production', status=PodStatus.Running, ready='1/1', restarts=0, age='2h', cpu=0.4, memory=245, logs=['[INFO] API Gateway listening on :8080', '[INFO] Connected to product-service', '[INFO] Connected to cart-service']),
-            Pod(id='pod-prod-6', name='product-service-9a7b6c5d4-pqr12', namespace='production', status=PodStatus.Running, ready='1/1', restarts=0, age='2h', cpu=0.3, memory=200, logs=['[INFO] Product service started', '[INFO] Connected to postgres-primary.data.svc.cluster.local', '[INFO] Cache connected to redis']),
-            Pod(id='pod-prod-7', name='product-service-9a7b6c5d4-stu34', namespace='production', status=PodStatus.Running, ready='1/1', restarts=0, age='2h', cpu=0.35, memory=210, logs=['[INFO] Product service started', '[INFO] Connected to postgres-primary.data.svc.cluster.local', '[INFO] Cache connected to redis']),
-            Pod(id='pod-prod-8', name='cart-service-3e4f5g6h7-vwx56', namespace='production', status=PodStatus.Running, ready='1/1', restarts=0, age='1h', cpu=0.2, memory=150, logs=['[INFO] Cart service initialized', '[INFO] Redis connection established', '[INFO] Ready to accept requests']),
-            Pod(id='pod-prod-9', name='cart-service-3e4f5g6h7-yza78', namespace='production', status=PodStatus.Running, ready='1/1', restarts=0, age='1h', cpu=0.25, memory=155, logs=['[INFO] Cart service initialized', '[INFO] Redis connection established', '[INFO] Ready to accept requests']),
-            Pod(id='pod-prod-10', name='order-service-8h9i0j1k2-bcd90', namespace='production', status=PodStatus.Running, ready='1/1', restarts=0, age='1h', cpu=0.4, memory=220, logs=['[INFO] Order service started', '[INFO] Database connection pool ready', '[INFO] RabbitMQ publisher connected']),
-            Pod(id='pod-prod-11', name='order-service-8h9i0j1k2-efg12', namespace='production', status=PodStatus.Running, ready='1/1', restarts=0, age='1h', cpu=0.45, memory=230, logs=['[INFO] Order service started', '[INFO] Database connection pool ready', '[INFO] RabbitMQ publisher connected']),
-            Pod(id='pod-data-1', name='postgres-primary-0', namespace='data', status=PodStatus.Running, ready='1/1', restarts=0, age='5h', cpu=0.8, memory=512, logs=['[INFO] PostgreSQL 15.3 starting', '[INFO] database system is ready to accept connections', '[INFO] Replication slot active']),
-            Pod(id='pod-data-2', name='postgres-replica-0', namespace='data', status=PodStatus.Running, ready='1/1', restarts=0, age='5h', cpu=0.3, memory=450, logs=['[INFO] PostgreSQL 15.3 starting', '[INFO] entering standby mode', '[INFO] streaming replication successfully connected']),
-            Pod(id='pod-data-3', name='redis-cache-6f7g8h9i0-abc12', namespace='data', status=PodStatus.Running, ready='1/1', restarts=0, age='4h', cpu=0.2, memory=256, logs=['[INFO] Redis 7.0.11 starting', '[INFO] Server initialized', '[INFO] Ready to accept connections']),
-            Pod(id='pod-data-4', name='redis-cache-6f7g8h9i0-def34', namespace='data', status=PodStatus.Running, ready='1/1', restarts=0, age='4h', cpu=0.15, memory=240, logs=['[INFO] Redis 7.0.11 starting', '[INFO] Server initialized', '[INFO] Ready to accept connections']),
-            Pod(id='pod-data-5', name='rabbitmq-0', namespace='data', status=PodStatus.Running, ready='1/1', restarts=0, age='4h', cpu=0.3, memory=300, logs=['[INFO] RabbitMQ 3.12.0 starting', '[INFO] Server startup complete', '[INFO] Cluster formed with 3 nodes']),
-            Pod(id='pod-data-6', name='rabbitmq-1', namespace='data', status=PodStatus.Running, ready='1/1', restarts=0, age='4h', cpu=0.25, memory=280, logs=['[INFO] RabbitMQ 3.12.0 starting', '[INFO] Joined cluster', '[INFO] Ready to accept connections']),
-            Pod(id='pod-data-7', name='rabbitmq-2', namespace='data', status=PodStatus.Running, ready='1/1', restarts=0, age='4h', cpu=0.28, memory=290, logs=['[INFO] RabbitMQ 3.12.0 starting', '[INFO] Joined cluster', '[INFO] Ready to accept connections'])
-        ]
-
-    def _init_services(self) -> List[Service]:
-        return [
-            Service(id='svc-prod-1', name='web-frontend', namespace='production', type='LoadBalancer', clusterIp='10.96.1.10', externalIp='34.123.45.67', ports='80:3000/TCP', age='3h', status=ServiceStatus.Active),
-            Service(id='svc-prod-2', name='api-gateway', namespace='production', type='ClusterIP', clusterIp='10.96.1.20', externalIp='<none>', ports='8080:8080/TCP', age='2h', status=ServiceStatus.Active),
-            Service(id='svc-prod-3', name='product-service', namespace='production', type='ClusterIP', clusterIp='10.96.1.30', externalIp='<none>', ports='8081:8081/TCP', age='2h', status=ServiceStatus.Active),
-            Service(id='svc-prod-4', name='cart-service', namespace='production', type='ClusterIP', clusterIp='10.96.1.40', externalIp='<none>', ports='8082:8082/TCP', age='1h', status=ServiceStatus.Active),
-            Service(id='svc-prod-5', name='order-service', namespace='production', type='ClusterIP', clusterIp='10.96.1.50', externalIp='<none>', ports='8083:8083/TCP', age='1h', status=ServiceStatus.Active),
-            Service(id='svc-data-1', name='postgres-primary', namespace='data', type='ClusterIP', clusterIp='10.96.2.10', externalIp='<none>', ports='5432:5432/TCP', age='5h', status=ServiceStatus.Active),
-            Service(id='svc-data-2', name='postgres-replica', namespace='data', type='ClusterIP', clusterIp='10.96.2.11', externalIp='<none>', ports='5432:5432/TCP', age='5h', status=ServiceStatus.Active),
-            Service(id='svc-data-3', name='redis-cache', namespace='data', type='ClusterIP', clusterIp='10.96.2.20', externalIp='<none>', ports='6379:6379/TCP', age='4h', status=ServiceStatus.Active),
-            Service(id='svc-data-4', name='rabbitmq', namespace='data', type='ClusterIP', clusterIp='10.96.2.30', externalIp='<none>', ports='5672:5672/TCP,15672:15672/TCP', age='4h', status=ServiceStatus.Active)
-        ]
-
-    def _init_deployments(self) -> List[Deployment]:
-        return [
-            Deployment(id='deploy-prod-1', name='web-frontend', namespace='production', ready='3/3', upToDate=3, available=3, age='3h', status=DeploymentStatus.Available),
-            Deployment(id='deploy-prod-2', name='api-gateway', namespace='production', ready='2/2', upToDate=2, available=2, age='2h', status=DeploymentStatus.Available),
-            Deployment(id='deploy-prod-3', name='product-service', namespace='production', ready='2/2', upToDate=2, available=2, age='2h', status=DeploymentStatus.Available),
-            Deployment(id='deploy-prod-4', name='cart-service', namespace='production', ready='2/2', upToDate=2, available=2, age='1h', status=DeploymentStatus.Available),
-            Deployment(id='deploy-prod-5', name='order-service', namespace='production', ready='2/2', upToDate=2, available=2, age='1h', status=DeploymentStatus.Available),
-            Deployment(id='deploy-data-1', name='redis-cache', namespace='data', ready='2/2', upToDate=2, available=2, age='4h', status=DeploymentStatus.Available)
-        ]
-
-    def get_state(self) -> GameState:
-        return GameState(
-            isGameRunning=self.is_game_running,
-            gameStartTime=self.game_start_time,
-            currentTime=datetime.now(),
-            pods=self.pods,
-            services=self.services,
-            deployments=self.deployments,
-            chaosEvents=self.chaos_events,
-            activeEvents=self.active_events,
-            terminalHistory=self.terminal_history,
-            currentCommand=self.current_command,
-            score=self.score
-        )
-
-    def start_game(self):
-        self.is_game_running = True
-        self.game_start_time = datetime.now()
-        self.chaos_events = []
-        self.active_events = []
-        self.score = GameScore(totalScore=0, mttr=0, commandsUsed=0, incidentsResolved=0, proactiveChecks=0)
-
-    def stop_game(self):
-        self.is_game_running = False
-        self.game_start_time = None
-
-    def generate_chaos_event(self):
-        if not self.is_game_running or self.active_events:
-            return
-
-        templates = [
-            {'type': ChaosEventType.api_gateway_overload, 'severity': ChaosSeverity.critical, 'desc': 'API Gateway overload', 'resources': ['api-gateway']},
-            {'type': ChaosEventType.pod_crash, 'severity': ChaosSeverity.high, 'desc': 'Web Frontend pod crash', 'resources': ['web-frontend']},
-            {'type': ChaosEventType.cart_service_oom, 'severity': ChaosSeverity.critical, 'desc': 'Cart Service OOM', 'resources': ['cart-service']},
-            {'type': ChaosEventType.high_cpu, 'severity': ChaosSeverity.medium, 'desc': 'Product Service High CPU', 'resources': ['product-service']},
-            {'type': ChaosEventType.database_connection_exhausted, 'severity': ChaosSeverity.critical, 'desc': 'DB Connection Exhausted', 'resources': ['postgres-primary']},
-            {'type': ChaosEventType.redis_cache_eviction, 'severity': ChaosSeverity.high, 'desc': 'Redis Cache Eviction', 'resources': ['redis-cache']},
-            {'type': ChaosEventType.rabbitmq_queue_full, 'severity': ChaosSeverity.high, 'desc': 'RabbitMQ Queue Full', 'resources': ['rabbitmq']},
-            {'type': ChaosEventType.dns_failure, 'severity': ChaosSeverity.critical, 'desc': 'DNS Failure', 'resources': ['product-service', 'cart-service']},
-            {'type': ChaosEventType.service_down, 'severity': ChaosSeverity.high, 'desc': 'Order Service Down', 'resources': ['order-service']},
-            {'type': ChaosEventType.deployment_failed, 'severity': ChaosSeverity.critical, 'desc': 'Deployment Failed', 'resources': ['product-service']}
-        ]
+        self.game_state = self._initialize_state()
+        self.k8s_client: Optional[KubernetesClient] = None
+        self.chaos_client: Optional[ChaosMeshClient] = None
+        self.simulation_mode = True  # Start in simulation mode
         
-        template = random.choice(templates)
-        event = ChaosEvent(
-            id=f"chaos-{int(datetime.now().timestamp())}-{uuid.uuid4().hex[:8]}",
-            type=template['type'],
-            severity=template['severity'],
-            description=template['desc'],
-            affectedResources=template['resources'],
-            timestamp=datetime.now(),
-            resolved=False
-        )
-        
-        self.chaos_events.append(event)
-        self.active_events.append(event)
-        self._apply_chaos_effects(event)
-
-    def _apply_chaos_effects(self, event: ChaosEvent):
-        # Simplified effect application logic
-        for pod in self.pods:
-            if any(r in pod.name for r in event.affectedResources):
-                if event.type == ChaosEventType.pod_crash:
-                    pod.status = PodStatus.CrashLoopBackOff
-                    pod.restarts += 1
-                    pod.logs.append(f"{datetime.now().isoformat()} ERROR: Process exited with code 137")
-                elif event.type == ChaosEventType.high_cpu:
-                    pod.cpu = min(95, pod.cpu + 60)
-                    pod.logs.append(f"{datetime.now().isoformat()} WARN: CPU throttling detected")
-                # Add more effects as needed...
-
-    def resolve_event(self, event_id: str):
-        event = next((e for e in self.active_events if e.id == event_id), None)
-        if not event:
-            return
-
-        self.active_events = [e for e in self.active_events if e.id != event_id]
-        for e in self.chaos_events:
-            if e.id == event_id:
-                e.resolved = True
-                e.resolvedAt = datetime.now()
-
-        # Restore resources
-        for pod in self.pods:
-            if any(r in pod.name for r in event.affectedResources):
-                pod.status = PodStatus.Running
-                pod.cpu = 0.2 # Reset to baseline
-                pod.logs.append(f"{datetime.now().isoformat()} INFO: Issue resolved, pod is healthy")
-
-        self.score.incidentsResolved += 1
-        self.score.totalScore += 100 # Simplified scoring
-
-    def execute_command(self, command: str) -> str:
-        self.current_command = command
-        self.terminal_history.append(f"$ {command}")
-        
-        parts = command.split()
-        if not parts:
-            return ""
+        # Try to connect to Kubernetes cluster
+        self._initialize_clients()
+    
+    def _initialize_clients(self):
+        """Initialize Kubernetes and Chaos Mesh clients"""
+        try:
+            # Try to connect to Kubernetes
+            self.k8s_client = KubernetesClient()
             
-        cmd = parts[0]
-        
-        output = ""
-        if cmd == "help":
-            output = "Available commands: help, get pods, get services, get deployments, resolve <event-id>"
-        elif cmd == "kubectl":
-            if len(parts) > 1:
-                if parts[1] == "get":
-                    if len(parts) > 2:
-                        resource = parts[2]
-                        if resource == "pods":
-                            output = "\n".join([f"{p.name}\t{p.status}\t{p.ready}\t{p.restarts}\t{p.age}" for p in self.pods])
-                        elif resource == "services":
-                            output = "\n".join([f"{s.name}\t{s.type}\t{s.clusterIp}\t{s.ports}\t{s.age}" for s in self.services])
-                        elif resource == "deployments":
-                            output = "\n".join([f"{d.name}\t{d.ready}\t{d.upToDate}\t{d.available}\t{d.age}" for d in self.deployments])
-                        else:
-                            output = f"Unknown resource: {resource}"
-                    else:
-                        output = "Missing resource type. Try 'kubectl get pods'"
+            if self.k8s_client.is_connected():
+                logger.info("Connected to Kubernetes cluster")
+                self.simulation_mode = False
+                
+                # Initialize Chaos Mesh client
+                self.chaos_client = ChaosMeshClient(self.k8s_client.custom_objects)
+                
+                if self.chaos_client.is_chaos_mesh_installed():
+                    logger.info("Chaos Mesh detected - real mode enabled")
                 else:
-                    output = f"Unknown kubectl command: {parts[1]}"
+                    logger.warning("Chaos Mesh not installed - simulation mode")
+                    self.simulation_mode = True
             else:
-                output = "kubectl requires arguments"
-        elif cmd == "resolve":
-            if len(parts) > 1:
-                event_id = parts[1]
-                self.resolve_event(event_id)
-                output = f"Attempting to resolve event {event_id}..."
-            else:
-                output = "Usage: resolve <event-id>"
-        elif cmd == "clear":
-            self.terminal_history = []
-            return ""
-        else:
-            output = f"Command not found: {cmd}"
+                logger.warning("Not connected to Kubernetes - simulation mode")
+                self.simulation_mode = True
+                
+        except Exception as e:
+            logger.error(f"Failed to initialize clients: {e}")
+            logger.info("Running in simulation mode")
+            self.simulation_mode = True
+    
+    def _initialize_state(self) -> GameState:
+        """Initialize game state"""
+        return GameState(
+            isGameRunning=False,
+            gameStartTime=None,
+            currentTime=datetime.now(),
+            pods=[],
+            services=[],
+            deployments=[],
+            chaosEvents=[],
+            activeEvents=[],
+            terminalHistory=[],
+            currentCommand="",
+            score=GameScore(
+                totalScore=0,
+                mttr=0.0,
+                commandsUsed=0,
+                incidentsResolved=0,
+                proactiveChecks=0
+            )
+        )
+    
+    def get_state(self) -> GameState:
+        """Get current game state"""
+        self.game_state.currentTime = datetime.now()
+        return self.game_state
+    
+    def get_cluster_status(self) -> Dict[str, Any]:
+        """Get Kubernetes cluster status"""
+        if not self.k8s_client or self.simulation_mode:
+            return {
+                "connected": False,
+                "chaos_mesh_installed": False,
+                "mode": "simulation"
+            }
+        
+        try:
+            cluster_info = self.k8s_client.get_cluster_info()
+            chaos_mesh_installed = self.chaos_client.is_chaos_mesh_installed() if self.chaos_client else False
             
-        self.terminal_history.append(output)
-        return output
+            return {
+                **cluster_info,
+                "chaos_mesh_installed": chaos_mesh_installed,
+                "mode": "real" if not self.simulation_mode else "simulation"
+            }
+        except Exception as e:
+            logger.error(f"Failed to get cluster status: {e}")
+            return {
+                "connected": False,
+                "chaos_mesh_installed": False,
+                "error": str(e),
+                "mode": "simulation"
+            }
+    
+    # Game Control
+    def start_game(self):
+        """Start the game"""
+        self.game_state.isGameRunning = True
+        self.game_state.gameStartTime = datetime.now()
+        logger.info("Game started")
+    
+    def stop_game(self):
+        """Stop the game"""
+        self.game_state.isGameRunning = False
+        logger.info("Game stopped")
+    
+    def reset_game(self):
+        """Reset game state"""
+        self.game_state = self._initialize_state()
+        logger.info("Game reset")
+    
+    # Command Execution
+    def execute_command(self, command: str, namespace: str = "default") -> Dict[str, Any]:
+        """Execute a kubectl command"""
+        self.game_state.score.commandsUsed += 1
+        
+        if self.simulation_mode or not self.k8s_client:
+            # Simulation mode - return mock data
+            return self._execute_simulated_command(command)
+        
+        try:
+            # Real mode - execute against actual cluster
+            result = self.k8s_client.execute_kubectl_command(command, namespace)
+            
+            # Add to terminal history
+            if result.get("success"):
+                self.game_state.terminalHistory.append(f"$ {command}")
+                self.game_state.terminalHistory.append(result.get("output", ""))
+            else:
+                self.game_state.terminalHistory.append(f"$ {command}")
+                self.game_state.terminalHistory.append(f"Error: {result.get('error', 'Unknown error')}")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Command execution failed: {e}")
+            return {"error": str(e), "success": False}
+    
+    def _execute_simulated_command(self, command: str) -> Dict[str, Any]:
+        """Execute command in simulation mode"""
+        # Simple simulation for backward compatibility
+        output = f"Simulated output for: {command}"
+        
+        if "get pods" in command:
+            output = "NAME                          READY   STATUS    RESTARTS   AGE\npayment-service-abc123        1/1     Running   0          1d"
+        elif "get services" in command:
+            output = "NAME              TYPE        CLUSTER-IP      PORT(S)\npayment-service   ClusterIP   10.96.0.1       80/TCP"
+        elif "help" in command:
+            output = "Available commands:\n  kubectl get pods\n  kubectl get services\n  kubectl get deployments\n  kubectl logs <pod-name>\n  kubectl describe pod <pod-name>"
+        
+        self.game_state.terminalHistory.append(f"$ {command}")
+        self.game_state.terminalHistory.append(output)
+        
+        return {"output": output, "success": True}
+    
+    # Scenario Management
+    def list_scenarios(self) -> List[Dict[str, Any]]:
+        """List all available scenarios"""
+        return [s.to_dict() for s in ALL_SCENARIOS]
+    
+    def get_scenario(self, scenario_id: str) -> Optional[Dict[str, Any]]:
+        """Get scenario by ID"""
+        scenario = get_scenario_by_id(scenario_id)
+        return scenario.to_dict() if scenario else None
+    
+    def get_scenarios_by_difficulty(self, difficulty: str) -> List[Dict[str, Any]]:
+        """Get scenarios by difficulty"""
+        try:
+            diff = Difficulty(difficulty)
+            scenarios = get_scenarios_by_difficulty(diff)
+            return [s.to_dict() for s in scenarios]
+        except ValueError:
+            return []
+    
+    def start_scenario(self, scenario_id: str, namespace: str = "ecommerce") -> Optional[Dict[str, Any]]:
+        """Start a game scenario"""
+        scenario = get_scenario_by_id(scenario_id)
+        if not scenario:
+            logger.error(f"Scenario not found: {scenario_id}")
+            return None
+        
+        if self.simulation_mode or not self.chaos_client:
+            logger.warning("Cannot start real scenario in simulation mode")
+            return {"error": "Simulation mode - real scenarios not available"}
+        
+        try:
+            # Create chaos experiment based on scenario config
+            chaos_config = scenario.chaos_config
+            chaos_type = chaos_config.get("type")
+            
+            experiment_name = f"game-{scenario_id}"
+            
+            if chaos_type == "PodChaos":
+                result = self.chaos_client.create_pod_chaos(
+                    name=experiment_name,
+                    namespace=namespace,
+                    config=chaos_config
+                )
+            elif chaos_type == "NetworkChaos":
+                result = self.chaos_client.create_network_chaos(
+                    name=experiment_name,
+                    namespace=namespace,
+                    config=chaos_config
+                )
+            elif chaos_type == "StressChaos":
+                result = self.chaos_client.create_stress_chaos(
+                    name=experiment_name,
+                    namespace=namespace,
+                    config=chaos_config
+                )
+            elif chaos_type == "IOChaos":
+                result = self.chaos_client.create_io_chaos(
+                    name=experiment_name,
+                    namespace=namespace,
+                    config=chaos_config
+                )
+            else:
+                logger.error(f"Unsupported chaos type: {chaos_type}")
+                return None
+            
+            logger.info(f"Started scenario {scenario_id}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to start scenario: {e}")
+            return None
+    
+    # Chaos Experiment Management
+    def list_chaos_experiments(self, namespace: str = "ecommerce") -> List[Dict[str, Any]]:
+        """List all chaos experiments"""
+        if self.simulation_mode or not self.chaos_client:
+            return []
+        
+        try:
+            return self.chaos_client.list_experiments(namespace)
+        except Exception as e:
+            logger.error(f"Failed to list experiments: {e}")
+            return []
+    
+    def get_chaos_experiment(self, name: str, namespace: str, chaos_type: str) -> Optional[Dict[str, Any]]:
+        """Get specific chaos experiment"""
+        if self.simulation_mode or not self.chaos_client:
+            return None
+        
+        try:
+            return self.chaos_client.get_experiment(name, namespace, chaos_type)
+        except Exception as e:
+            logger.error(f"Failed to get experiment: {e}")
+            return None
+    
+    def create_custom_chaos(self, chaos_type: str, name: str, namespace: str, config: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Create custom chaos experiment"""
+        if self.simulation_mode or not self.chaos_client:
+            return {"error": "Simulation mode - real chaos not available"}
+        
+        try:
+            if chaos_type == "PodChaos":
+                return self.chaos_client.create_pod_chaos(name, namespace, config)
+            elif chaos_type == "NetworkChaos":
+                return self.chaos_client.create_network_chaos(name, namespace, config)
+            elif chaos_type == "StressChaos":
+                return self.chaos_client.create_stress_chaos(name, namespace, config)
+            elif chaos_type == "IOChaos":
+                return self.chaos_client.create_io_chaos(name, namespace, config)
+            else:
+                return {"error": f"Unsupported chaos type: {chaos_type}"}
+        except Exception as e:
+            logger.error(f"Failed to create custom chaos: {e}")
+            return None
+    
+    def pause_chaos_experiment(self, name: str, namespace: str, chaos_type: str) -> bool:
+        """Pause chaos experiment"""
+        if self.simulation_mode or not self.chaos_client:
+            return False
+        
+        try:
+            return self.chaos_client.pause_experiment(name, namespace, chaos_type)
+        except Exception as e:
+            logger.error(f"Failed to pause experiment: {e}")
+            return False
+    
+    def resume_chaos_experiment(self, name: str, namespace: str, chaos_type: str) -> bool:
+        """Resume chaos experiment"""
+        if self.simulation_mode or not self.chaos_client:
+            return False
+        
+        try:
+            return self.chaos_client.resume_experiment(name, namespace, chaos_type)
+        except Exception as e:
+            logger.error(f"Failed to resume experiment: {e}")
+            return False
+    
+    def delete_chaos_experiment(self, name: str, namespace: str, chaos_type: str) -> bool:
+        """Delete chaos experiment"""
+        if self.simulation_mode or not self.chaos_client:
+            return False
+        
+        try:
+            return self.chaos_client.delete_experiment(name, namespace, chaos_type)
+        except Exception as e:
+            logger.error(f"Failed to delete experiment: {e}")
+            return False
+    
+    # Kubernetes Resource Operations
+    def list_pods(self, namespace: str = "default") -> List[Dict[str, Any]]:
+        """List pods"""
+        if self.simulation_mode or not self.k8s_client:
+            return []
+        
+        try:
+            return self.k8s_client.list_pods(namespace)
+        except Exception as e:
+            logger.error(f"Failed to list pods: {e}")
+            return []
+    
+    def get_pod(self, name: str, namespace: str = "default") -> Optional[Dict[str, Any]]:
+        """Get pod details"""
+        if self.simulation_mode or not self.k8s_client:
+            return None
+        
+        try:
+            return self.k8s_client.get_pod(name, namespace)
+        except Exception as e:
+            logger.error(f"Failed to get pod: {e}")
+            return None
+    
+    def get_pod_logs(self, name: str, namespace: str = "default", tail_lines: int = 100) -> str:
+        """Get pod logs"""
+        if self.simulation_mode or not self.k8s_client:
+            return "Simulation mode - no real logs available"
+        
+        try:
+            return self.k8s_client.get_pod_logs(name, namespace, tail_lines=tail_lines)
+        except Exception as e:
+            logger.error(f"Failed to get pod logs: {e}")
+            return f"Error: {str(e)}"
+    
+    def list_services(self, namespace: str = "default") -> List[Dict[str, Any]]:
+        """List services"""
+        if self.simulation_mode or not self.k8s_client:
+            return []
+        
+        try:
+            return self.k8s_client.list_services(namespace)
+        except Exception as e:
+            logger.error(f"Failed to list services: {e}")
+            return []
+    
+    def list_deployments(self, namespace: str = "default") -> List[Dict[str, Any]]:
+        """List deployments"""
+        if self.simulation_mode or not self.k8s_client:
+            return []
+        
+        try:
+            return self.k8s_client.list_deployments(namespace)
+        except Exception as e:
+            logger.error(f"Failed to list deployments: {e}")
+            return []
+    
+    def list_namespaces(self) -> List[str]:
+        """List namespaces"""
+        if self.simulation_mode or not self.k8s_client:
+            return ["default", "kube-system"]
+        
+        try:
+            return self.k8s_client.list_namespaces()
+        except Exception as e:
+            logger.error(f"Failed to list namespaces: {e}")
+            return []
+    
+    # Legacy methods for backward compatibility
+    def generate_chaos_event(self):
+        """Generate chaos event (simulation mode)"""
+        logger.info("Legacy chaos event generation called")
+        pass
+    
+    def resolve_event(self, event_id: str):
+        """Resolve chaos event (simulation mode)"""
+        logger.info(f"Legacy event resolution called for {event_id}")
+        pass
 
+
+# Global game manager instance
 game_manager = GameManager()

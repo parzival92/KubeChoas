@@ -1,115 +1,169 @@
-# KubeChaos - Kubernetes Chaos Engineering Game
+# KubeChaos - Kubernetes Chaos Engineering Training Game
 
-A DevOps chaos simulator game for SREs & Engineers. Defend your cluster against chaos attacks using real kubectl commands.
+A gamified chaos engineering platform built on top of [Chaos Mesh](https://chaos-mesh.org) that helps SREs and DevOps engineers practice incident response skills in a safe, local Kubernetes environment.
 
-## �️ Architecture
+## 🎮 What is KubeChaos?
 
-This project is split into two separate applications:
+KubeChaos transforms chaos engineering into an interactive learning experience. Instead of just reading about Kubernetes failures, you'll **actively respond to real chaos experiments** in a local cluster, building muscle memory for production incidents.
 
-- **Backend** (`/backend`): Python FastAPI server providing REST API with Swagger documentation
-- **Frontend** (`/frontend`): Next.js application with a Cyberpunk Ops Center UI
+### Key Features
+
+- 🎯 **Real Chaos Engineering** - Built on Chaos Mesh, not simulations
+- 🏆 **Progressive Scenarios** - 8+ challenges from beginner to expert
+- 📊 **Live Metrics** - Real-time cluster monitoring and MTTR tracking
+- 🖥️ **Interactive Terminal** - Execute real kubectl commands
+- 🎓 **Learning Focused** - Hints, objectives, and skill progression
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.9+
-- Node.js 18+
-- npm or yarn
-
-### Running the Backend
+### One-Command Setup
 
 ```bash
+curl -sSL https://raw.githubusercontent.com/YOUR_REPO/main/setup/install.sh | bash
+```
+
+This will:
+1. Install `kind` (Kubernetes in Docker)
+2. Create a local Kubernetes cluster
+3. Install Chaos Mesh
+4. Deploy a demo e-commerce microservices app
+
+### Manual Setup
+
+If you prefer manual installation:
+
+```bash
+# Clone the repository
+git clone https://github.com/YOUR_REPO/KubeChoas.git
+cd KubeChoas
+
+# Run setup script
+./setup/install.sh
+```
+
+### Start the Game
+
+```bash
+# Terminal 1: Start backend
 cd backend
 pip install -r requirements.txt
 python3 -m uvicorn main:app --reload --port 8000
-```
 
-The backend API will be available at:
-- **API**: http://localhost:8000
-- **Swagger Docs**: http://localhost:8000/docs
-
-### Running the Frontend
-
-```bash
+# Terminal 2: Start frontend
 cd frontend
 npm install
 npm run dev
 ```
 
-The frontend will be available at http://localhost:3000
+Open http://localhost:3000 and start playing!
 
-## 📚 Documentation
+## 📚 How to Play
 
-- **Backend API**: See Swagger documentation at http://localhost:8000/docs
-- **Frontend**: See `frontend/README.md` for UI details
-- **Game Plan**: See `KubeChaos_Initial_Game_Plan.docx` for original design
+1. **Choose a Scenario** - Select from beginner to expert challenges
+2. **Chaos Begins** - A real chaos experiment starts in your cluster
+3. **Investigate** - Use kubectl commands to diagnose the issue
+4. **Resolve** - Fix the problem and restore service health
+5. **Learn** - Review your MTTR, commands used, and get feedback
 
-## 🎮 How to Play
+### Example Scenarios
 
-1. Start both the backend and frontend servers
-2. Open http://localhost:3000 in your browser
-3. Click "Initialize" to start the game
-4. Use the terminal to run kubectl commands
-5. Resolve chaos events to earn points
-6. Monitor your cluster in the 3D visualizer
+- **Pod Termination 101** - Handle pod crashes and CrashLoopBackOff
+- **Network Latency Spike** - Debug slow response times
+- **CPU Stress Response** - Scale resources under pressure
+- **Cascade Failure Recovery** - Handle multi-service failures
 
 ## 🛠️ Tech Stack
 
 ### Backend
-- FastAPI
-- Pydantic
-- Uvicorn
+- **FastAPI** - REST API server
+- **Kubernetes Python Client** - Cluster interaction
+- **Chaos Mesh CRDs** - Real chaos experiments
 
 ### Frontend
-- Next.js 15
-- React 19
-- TypeScript
-- Tailwind CSS
-- Zustand (State Management)
-- Three.js / React Three Fiber (3D Visualization)
-- Framer Motion (Animations)
+- **Next.js 15** - React framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **Zustand** - State management
 
-## � Project Structure
+### Infrastructure
+- **kind** - Local Kubernetes cluster
+- **Chaos Mesh** - CNCF chaos engineering platform
+- **Demo App** - Microservices e-commerce application
+
+## 📖 Documentation
+
+- [Setup Guide](docs/setup-guide.md) - Detailed installation instructions
+- [Game Mechanics](docs/game-mechanics.md) - How scoring and progression work
+- [Chaos Mesh Integration](docs/chaos-mesh-integration.md) - Architecture details
+- [API Reference](http://localhost:8000/docs) - Backend API documentation
+
+## 🎯 Learning Objectives
+
+By playing KubeChaos, you'll learn:
+
+- ✅ Kubernetes troubleshooting with kubectl
+- ✅ Pod lifecycle and restart policies
+- ✅ Network debugging and service mesh concepts
+- ✅ Resource management and autoscaling
+- ✅ Incident response best practices
+- ✅ Chaos engineering principles
+
+## 🏗️ Architecture
 
 ```
-KubeChoas/
-├── backend/              # Python FastAPI backend
-│   ├── main.py          # API entry point
-│   ├── models.py        # Pydantic models
-│   ├── game_logic.py    # Game state management
-│   └── requirements.txt # Python dependencies
-├── frontend/            # Next.js frontend
-│   ├── src/            # Source code
-│   ├── public/         # Static assets
-│   └── package.json    # Node dependencies
-├── docs/               # Documentation
-└── README.md           # This file
+┌─────────────────────────────────────────┐
+│         KubeChaos Game Layer            │
+│  ┌──────────────┐    ┌──────────────┐  │
+│  │   Frontend   │───▶│   Backend    │  │
+│  │   Next.js    │    │   FastAPI    │  │
+│  └──────────────┘    └──────┬───────┘  │
+└────────────────────────────┼────────────┘
+                             │
+┌────────────────────────────┼────────────┐
+│         Chaos Mesh Layer   │            │
+│  ┌──────────────┐    ┌─────▼────────┐  │
+│  │ Chaos CRDs   │◀───│  Controller  │  │
+│  └──────┬───────┘    └──────────────┘  │
+└─────────┼──────────────────────────────┘
+          │
+┌─────────▼──────────────────────────────┐
+│      Kubernetes Cluster (kind)         │
+│  ┌──────┐  ┌──────┐  ┌──────┐         │
+│  │ Pods │  │ Svcs │  │Deploy│         │
+│  └──────┘  └──────┘  └──────┘         │
+└────────────────────────────────────────┘
 ```
 
-## 🧪 Testing
+## 🧪 Available Chaos Types
 
-### Backend
-```bash
-cd backend
-# Run tests (when implemented)
-pytest
-```
-
-### Frontend
-```bash
-cd frontend
-npm run test
-npm run test:e2e
-```
-
-## 📝 License
-
-MIT License - See LICENSE file for details
+- **PodChaos** - Pod failures, kills, container kills
+- **NetworkChaos** - Latency, packet loss, partitions
+- **StressChaos** - CPU and memory pressure
+- **IOChaos** - Disk I/O delays and failures
+- **TimeChaos** - Clock skew injection
+- **DNSChaos** - DNS resolution errors
+- **HTTPChaos** - HTTP request/response manipulation
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read CONTRIBUTING.md for details on our code of conduct and the process for submitting pull requests.
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-## � Contact
+## 📝 License
 
-For questions or support, please open an issue on GitHub.
+MIT License - See [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [Chaos Mesh](https://chaos-mesh.org) - The CNCF chaos engineering platform
+- [Kubernetes](https://kubernetes.io) - Container orchestration
+- [kind](https://kind.sigs.k8s.io) - Kubernetes in Docker
+
+## 📧 Support
+
+- 🐛 [Report Issues](https://github.com/YOUR_REPO/KubeChoas/issues)
+- 💬 [Discussions](https://github.com/YOUR_REPO/KubeChoas/discussions)
+- 📖 [Documentation](https://github.com/YOUR_REPO/KubeChoas/wiki)
+
+---
+
+**Ready to break things constructively?** 🎮 Start your chaos engineering journey today!

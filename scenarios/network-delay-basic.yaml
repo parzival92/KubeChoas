@@ -1,0 +1,24 @@
+# Network Delay Scenario - Level 2
+# Adds latency to network traffic
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: game-network-delay
+  namespace: ecommerce
+  labels:
+    app: kubechaos-game
+    scenario: network-delay-basic
+spec:
+  action: delay
+  mode: one
+  selector:
+    namespaces:
+      - ecommerce
+    labelSelectors:
+      app: api-gateway
+  delay:
+    latency: "500ms"
+    correlation: "100"
+    jitter: "50ms"
+  duration: 90s

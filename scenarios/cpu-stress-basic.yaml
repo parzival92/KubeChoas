@@ -1,0 +1,23 @@
+# CPU Stress Scenario - Level 3
+# Stresses CPU on target pods
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: game-cpu-stress
+  namespace: ecommerce
+  labels:
+    app: kubechaos-game
+    scenario: cpu-stress-basic
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - ecommerce
+    labelSelectors:
+      app: product-catalog
+  stressors:
+    cpu:
+      workers: 2
+      load: 80
+  duration: 90s

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
 
@@ -100,3 +100,37 @@ class GameState(BaseModel):
     terminalHistory: List[str]
     currentCommand: str
     score: GameScore
+
+# New Models for Chaos Mesh Integration
+class ChaosExperimentStatus(str, Enum):
+    Running = "Running"
+    Paused = "Paused"
+    Finished = "Finished"
+    Failed = "Failed"
+    Unknown = "Unknown"
+
+class ChaosExperiment(BaseModel):
+    name: str
+    namespace: str
+    type: str  # PodChaos, NetworkChaos, etc.
+    status: ChaosExperimentStatus
+    created: Optional[str] = None
+    spec: Dict[str, Any] = {}
+
+class ScenarioInfo(BaseModel):
+    id: str
+    name: str
+    description: str
+    difficulty: str
+    category: str
+    learning_objectives: List[str]
+    time_limit_seconds: int
+    max_score: int
+    hints: List[str]
+
+class ClusterStatus(BaseModel):
+    connected: bool
+    chaos_mesh_installed: bool
+    version: Optional[str] = None
+    nodes: int = 0
+    error: Optional[str] = None
