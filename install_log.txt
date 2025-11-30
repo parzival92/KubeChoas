@@ -1,0 +1,24 @@
+🎮 KubeChaos - Complete Setup
+=============================
+
+This script will:
+  1. Install kind (if not present)
+  2. Create a local Kubernetes cluster
+  3. Install Chaos Mesh
+  4. Deploy demo e-commerce application
+
+📋 System Info:
+   OS: Darwin
+   Architecture: arm64
+
+✅ kind already installed
+✅ kubectl already installed
+
+🚀 Creating kind cluster 'kubechaos'...
+Creating cluster "kubechaos" ...
+ • Ensuring node image (kindest/node:v1.33.1) 🖼  ...
+ ✗ Ensuring node image (kindest/node:v1.33.1) 🖼
+ERROR: failed to create cluster: failed to pull image "kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f": command "docker pull kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f" failed with error: exit status 1
+
+Command Output: docker.io/kindest/node@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f: Pulling from kindest/node
+failed to copy: httpReadSeeker: failed open: failed to do request: Get "https://production.cloudflare.docker.com/registry-v2/docker/registry/v2/blobs/sha256/07/071dd73121e8f3e4c35ded279d1cfb1cf6618dfeb8da98b910613ed0342a9b25/data?expires=1764483875&signature=Uz8D1262K5hqbtOq%2FjIkY%2FaVlhQ%3D&version=2": dialing production.cloudflare.docker.com:443 container via direct connection because disabled has no HTTPS proxy: connecting to production.cloudflare.docker.com:443: dial tcp: lookup production.cloudflare.docker.com: no such host

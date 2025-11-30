@@ -79,15 +79,10 @@ fi
 echo ""
 echo "🚀 Creating kind cluster 'kubechaos'..."
 
-# Check if cluster already exists
-if kind get clusters | grep -q "^kubechaos$"; then
-    echo "⚠️  Cluster 'kubechaos' already exists. Delete it? (y/n)"
-    read -r response
-    if [ "$response" = "y" ]; then
-        kind delete cluster --name kubechaos
-    else
-        echo "Using existing cluster..."
-    fi
+# Check if cluster already exists and delete it
+if kind get clusters 2>/dev/null | grep -q "^kubechaos$"; then
+    echo "⚠️  Cluster 'kubechaos' already exists. Deleting and recreating..."
+    kind delete cluster --name kubechaos
 fi
 
 # Create kind cluster with custom config
@@ -310,8 +305,8 @@ spec:
   ports:
   - port: 80
     targetPort: 80
+    nodePort: 30000
   type: NodePort
-  nodePort: 30000
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -382,19 +377,14 @@ echo ""
 echo "🎮 Next Steps:"
 echo ""
 echo "1. Install Python dependencies:"
-echo "   cd backend && pip install -r requirements.txt"
+echo "   cd backend && pip3 install -r requirements.txt"
 echo ""
 echo "2. Start the backend:"
 echo "   cd backend && python3 -m uvicorn main:app --reload --port 8000"
 echo ""
-echo "3. In a new terminal, install frontend dependencies:"
-echo "   cd frontend && npm install"
-echo ""
-echo "4. Start the frontend:"
-echo "   cd frontend && npm run dev"
-echo ""
-echo "5. Open your browser:"
-echo "   http://localhost:3000"
+echo "3. Access the API:"
+echo "   http://localhost:8000"
+echo "   API Documentation: http://localhost:8000/docs"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
