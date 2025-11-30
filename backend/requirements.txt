@@ -5,3 +5,6 @@ kubernetes
 pyyaml
 websockets
 python-dotenv
+typer
+rich
+requests

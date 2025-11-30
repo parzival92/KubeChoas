@@ -142,6 +142,10 @@ def start_scenario(scenario_id: str, namespace: Optional[str] = "ecommerce"):
         result = game_manager.start_scenario(scenario_id, namespace)
         if not result:
             raise HTTPException(status_code=400, detail="Failed to start scenario")
+        
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+            
         return {
             "message": f"Scenario {scenario_id} started",
             "experiment": result,

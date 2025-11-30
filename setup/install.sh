@@ -112,7 +112,7 @@ echo ""
 echo "📦 Installing Chaos Mesh..."
 
 # Install Chaos Mesh using official script
-curl -sSL https://mirrors.chaos-mesh.org/v2.6.3/install.sh | bash -s -- --local kind
+curl -sSL https://mirrors.chaos-mesh.org/v2.6.3/install.sh | bash
 
 echo ""
 echo "⏳ Waiting for Chaos Mesh to be ready..."
@@ -385,6 +385,11 @@ echo ""
 echo "3. Access the API:"
 echo "   http://localhost:8000"
 echo "   API Documentation: http://localhost:8000/docs"
+echo ""
+echo "4. Use the CLI (Terminal Mode):"
+echo "   cd backend && python3 cli.py --help"
+echo "   Example: python3 cli.py list"
+echo "   Example: python3 cli.py start pod-kill-basic"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
