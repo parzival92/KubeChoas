@@ -83,14 +83,14 @@ SCENARIO_POD_KILL_BASIC = GameScenario(
     chaos_config={
         "type": "PodChaos",
         "action": "pod-kill",
-        "mode": "one",
+        "mode": "all",
         "selector": {
             "namespaces": ["ecommerce"],
             "labelSelectors": {
                 "app": "payment-service"
             }
         },
-        "duration": "60s"
+        "duration": "180s"
     },
     success_criteria={
         "pods_running": True,

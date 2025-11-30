@@ -1,6 +1,6 @@
 # KubeChaos - Kubernetes Chaos Engineering Training Game
 
-A gamified chaos engineering platform built on top of [Chaos Mesh](https://chaos-mesh.org) that helps SREs and DevOps engineers practice incident response skills in a safe, local Kubernetes environment.
+A terminal-driven chaos engineering platform built on top of [Chaos Mesh](https://chaos-mesh.org) that helps SREs and DevOps engineers practice incident response skills in a safe, local Kubernetes environment.
 
 ## 🎮 What is KubeChaos?
 
@@ -11,7 +11,7 @@ KubeChaos transforms chaos engineering into an interactive learning experience. 
 - 🎯 **Real Chaos Engineering** - Built on Chaos Mesh, not simulations
 - 🏆 **Progressive Scenarios** - 8+ challenges from beginner to expert
 - 📊 **Live Metrics** - Real-time cluster monitoring and MTTR tracking
-- 🖥️ **Interactive Terminal** - Execute real kubectl commands
+- 🖥️ **Terminal-Driven** - Beautiful CLI interface with rich formatting
 - 🎓 **Learning Focused** - Hints, objectives, and skill progression
 
 ## 🚀 Quick Start
@@ -41,26 +41,28 @@ cd KubeChoas
 ./setup/install.sh
 ```
 
-### Start the Game
+### Start Playing
 
 ```bash
-# Terminal 1: Start backend
+# Install Python dependencies
 cd backend
-pip install -r requirements.txt
+pip3 install -r requirements.txt
+
+# Start the backend API
 python3 -m uvicorn main:app --reload --port 8000
 
-# Terminal 2: Start frontend
-cd frontend
-npm install
-npm run dev
+# In another terminal, use the CLI
+python3 cli.py list                    # List available scenarios
+python3 cli.py start pod-kill-basic    # Start a scenario
+python3 cli.py status                  # Check current status
+python3 cli.py hint                    # Get hints
+python3 cli.py stop                    # Stop chaos experiments
 ```
-
-Open http://localhost:3000 and start playing!
 
 ## 📚 How to Play
 
-1. **Choose a Scenario** - Select from beginner to expert challenges
-2. **Chaos Begins** - A real chaos experiment starts in your cluster
+1. **Choose a Scenario** - Use `python3 cli.py list` to see available challenges
+2. **Chaos Begins** - Start a scenario with `python3 cli.py start <scenario-id>`
 3. **Investigate** - Use kubectl commands to diagnose the issue
 4. **Resolve** - Fix the problem and restore service health
 5. **Learn** - Review your MTTR, commands used, and get feedback
@@ -78,24 +80,13 @@ Open http://localhost:3000 and start playing!
 - **FastAPI** - REST API server
 - **Kubernetes Python Client** - Cluster interaction
 - **Chaos Mesh CRDs** - Real chaos experiments
-
-### Frontend
-- **Next.js 15** - React framework
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Styling
-- **Zustand** - State management
+- **Typer** - CLI framework
+- **Rich** - Terminal formatting
 
 ### Infrastructure
 - **kind** - Local Kubernetes cluster
 - **Chaos Mesh** - CNCF chaos engineering platform
 - **Demo App** - Microservices e-commerce application
-
-## 📖 Documentation
-
-- [Setup Guide](docs/setup-guide.md) - Detailed installation instructions
-- [Game Mechanics](docs/game-mechanics.md) - How scoring and progression work
-- [Chaos Mesh Integration](docs/chaos-mesh-integration.md) - Architecture details
-- [API Reference](http://localhost:8000/docs) - Backend API documentation
 
 ## 🎯 Learning Objectives
 
@@ -114,8 +105,8 @@ By playing KubeChaos, you'll learn:
 ┌─────────────────────────────────────────┐
 │         KubeChaos Game Layer            │
 │  ┌──────────────┐    ┌──────────────┐  │
-│  │   Frontend   │───▶│   Backend    │  │
-│  │   Next.js    │    │   FastAPI    │  │
+│  │     CLI      │───▶│   Backend    │  │
+│  │   (Typer)    │    │   FastAPI    │  │
 │  └──────────────┘    └──────┬───────┘  │
 └────────────────────────────┼────────────┘
                              │
@@ -162,7 +153,6 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 - 🐛 [Report Issues](https://github.com/YOUR_REPO/KubeChoas/issues)
 - 💬 [Discussions](https://github.com/YOUR_REPO/KubeChoas/discussions)
-- 📖 [Documentation](https://github.com/YOUR_REPO/KubeChoas/wiki)
 
 ---
 

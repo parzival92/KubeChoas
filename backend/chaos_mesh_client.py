@@ -75,6 +75,17 @@ class ChaosMeshClient:
         Returns:
             Created experiment object or None on failure
         """
+        spec = {
+            "action": config.get("action", "pod-kill"),
+            "mode": config.get("mode", "one"),
+            "selector": config.get("selector", {}),
+            "duration": config.get("duration", "30s")
+        }
+        
+        # Add scheduler if present
+        if "scheduler" in config:
+            spec["scheduler"] = config["scheduler"]
+        
         body = {
             "apiVersion": f"{self.CHAOS_MESH_GROUP}/{self.CHAOS_MESH_VERSION}",
             "kind": "PodChaos",
@@ -85,12 +96,7 @@ class ChaosMeshClient:
                     "app": "kubechaos-game"
                 }
             },
-            "spec": {
-                "action": config.get("action", "pod-kill"),
-                "mode": config.get("mode", "one"),
-                "selector": config.get("selector", {}),
-                "duration": config.get("duration", "30s")
-            }
+            "spec": spec
         }
         
         return self._create_chaos_experiment("podchaos", namespace, body)

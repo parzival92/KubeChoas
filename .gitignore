@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-frontend/node_modules/
 
 # Python
 __pycache__/
@@ -8,17 +7,10 @@ __pycache__/
 *$py.class
 *.so
 .Python
-backend/__pycache__/
 .venv/
 venv/
 ENV/
 env/
-
-# Next.js
-.next/
-frontend/.next/
-out/
-frontend/out/
 
 # Production
 build/
@@ -28,9 +20,7 @@ dist/
 coverage/
 .nyc_output/
 test-results/
-frontend/test-results/
 playwright-report/
-frontend/playwright-report/
 
 # Misc
 .DS_Store
