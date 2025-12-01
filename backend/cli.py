@@ -148,7 +148,7 @@ def status():
         if experiments:
             rprint("\n[bold red]Active Chaos Experiments:[/bold red]")
             for exp in experiments:
-                rprint(f"  • [bold]{exp['name']}[/bold] ({exp['kind']})")
+                rprint(f"  • [bold]{exp['name']}[/bold] ({exp['type']})")
         else:
             rprint("\n[green]No active chaos experiments. Cluster is stable.[/green]")
             
@@ -228,8 +228,8 @@ def stop():
             
         for exp in experiments:
             # Delete experiment
-            # We need to know the type (kind)
-            kind = exp['kind']
+            # We need to know the type
+            kind = exp['type']
             name = exp['name']
             namespace = exp['namespace']
             

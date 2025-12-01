@@ -1,7 +1,7 @@
 #!/bin/bash
 # KubeChaos One-Command Setup
 # Installs kind, creates cluster, installs Chaos Mesh, and deploys demo app
-# Usage: curl -sSL https://raw.githubusercontent.com/YOUR_REPO/main/setup/install.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/parzival92/main/setup/install.sh | bash
 
 set -e
 
@@ -127,7 +127,7 @@ echo ""
 echo "🏪 Deploying demo e-commerce application..."
 
 # Deploy demo application
-kubectl apply -f https://raw.githubusercontent.com/YOUR_REPO/main/setup/demo-app.yaml 2>/dev/null || \
+kubectl apply -f https://raw.githubusercontent.com/parzival92/main/setup/demo-app.yaml 2>/dev/null || \
 kubectl apply -f - <<'EOF'
 ---
 apiVersion: apps/v1

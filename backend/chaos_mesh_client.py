@@ -82,6 +82,10 @@ class ChaosMeshClient:
             "duration": config.get("duration", "30s")
         }
         
+        # Add value if mode is 'fixed' or 'fixed-percent'
+        if "value" in config:
+            spec["value"] = config["value"]
+        
         # Add scheduler if present
         if "scheduler" in config:
             spec["scheduler"] = config["scheduler"]

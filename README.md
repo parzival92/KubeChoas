@@ -19,7 +19,7 @@ KubeChaos transforms chaos engineering into an interactive learning experience. 
 ### One-Command Setup
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/YOUR_REPO/main/setup/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/parzival92/main/setup/install.sh | bash
 ```
 
 This will:
@@ -34,7 +34,7 @@ If you prefer manual installation:
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_REPO/KubeChoas.git
+git clone https://github.com/parzival92/KubeChoas.git
 cd KubeChoas
 
 # Run setup script
@@ -151,8 +151,8 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ## 📧 Support
 
-- 🐛 [Report Issues](https://github.com/YOUR_REPO/KubeChoas/issues)
-- 💬 [Discussions](https://github.com/YOUR_REPO/KubeChoas/discussions)
+- 🐛 [Report Issues](https://github.com/parzival92/KubeChoas/issues)
+- 💬 [Discussions](https://github.com/parzival92/KubeChoas/discussions)
 
 ---
 

@@ -82,8 +82,9 @@ SCENARIO_POD_KILL_BASIC = GameScenario(
     ],
     chaos_config={
         "type": "PodChaos",
-        "action": "pod-kill",
-        "mode": "all",
+        "action": "pod-failure",
+        "mode": "fixed",
+        "value": "2",
         "selector": {
             "namespaces": ["ecommerce"],
             "labelSelectors": {

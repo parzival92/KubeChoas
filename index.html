@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KubeChaos - Terminal-Driven Kubernetes Chaos Engineering</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">⚡ KubeChaos</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#quickstart">Quick Start</a>
+                <a href="#scenarios">Scenarios</a>
+                <a href="https://github.com/parzival92/KubeChoas" target="_blank">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Master Kubernetes Chaos Engineering
+                    <span class="gradient-text">From Your Terminal</span>
+                </h1>
+                <p class="hero-subtitle">
+                    A terminal-driven chaos engineering platform built on Chaos Mesh.
+                    Practice real SRE skills in a safe, local environment.
+                </p>
+                <div class="hero-cta">
+                    <a href="#quickstart" class="btn btn-primary">Get Started</a>
+                    <a href="https://github.com/parzival92/KubeChoas" class="btn btn-secondary">View on GitHub</a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-number">8+</div>
+                        <div class="stat-label">Scenarios</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">Real Chaos</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Cloud Cost</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-terminal">
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <div class="terminal-title">KubeChaos CLI</div>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="terminal-line">
+                            <span class="prompt">$</span> python3 cli.py list
+                        </div>
+                        <div class="terminal-output">
+                            <div class="scenario-item">
+                                <span class="scenario-id">pod-kill-basic</span>
+                                <span class="scenario-diff beginner">beginner</span>
+                            </div>
+                            <div class="scenario-item">
+                                <span class="scenario-id">network-delay-basic</span>
+                                <span class="scenario-diff beginner">beginner</span>
+                            </div>
+                            <div class="scenario-item">
+                                <span class="scenario-id">cpu-stress-basic</span>
+                                <span class="scenario-diff beginner">beginner</span>
+                            </div>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="prompt">$</span> python3 cli.py start pod-kill-basic
+                        </div>
+                        <div class="terminal-output success">
+                            ✓ Scenario Started: Pod Termination 101
+                        </div>
+                        <div class="terminal-line">
+                            <span class="prompt">$</span> <span class="cursor">_</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Why KubeChaos?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Real Chaos Engineering</h3>
+                    <p>Built on Chaos Mesh, not simulations. Practice with actual Kubernetes chaos experiments.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🖥️</div>
+                    <h3>Terminal-Driven</h3>
+                    <p>Beautiful CLI interface with rich formatting. Perfect for SRE and DevOps workflows.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏆</div>
+                    <h3>Progressive Learning</h3>
+                    <p>8+ scenarios from beginner to expert. Build skills gradually with guided challenges.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>One-Click Setup</h3>
+                    <p>Automated installer creates a complete local lab with kind, Chaos Mesh, and demo apps.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Live Monitoring</h3>
+                    <p>Real-time cluster status, pod health, and chaos experiment tracking.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎓</div>
+                    <h3>Learning Focused</h3>
+                    <p>Hints, objectives, and skill progression. Learn by doing, not just reading.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="quickstart" class="quickstart">
+        <div class="container">
+            <h2 class="section-title">Get Started in 60 Seconds</h2>
+            <div class="quickstart-steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Install</h3>
+                        <div class="code-block">
+                            <code>curl -sSL https://raw.githubusercontent.com/parzival92/main/setup/install.sh | bash</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <p>This installs kind, creates a cluster, and deploys Chaos Mesh + demo app</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Start Backend</h3>
+                        <div class="code-block">
+                            <code>cd backend && pip3 install -r requirements.txt<br>python3 -m uvicorn main:app --reload --port 8000</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Play!</h3>
+                        <div class="code-block">
+                            <code>python3 cli.py list<br>python3 cli.py start pod-kill-basic</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="scenarios" class="scenarios">
+        <div class="container">
+            <h2 class="section-title">Available Scenarios</h2>
+            <div class="scenarios-grid">
+                <div class="scenario-card beginner">
+                    <div class="scenario-header">
+                        <span class="scenario-badge">Beginner</span>
+                        <span class="scenario-time">180s</span>
+                    </div>
+                    <h3>Pod Termination 101</h3>
+                    <p>Handle pod crashes and learn restart policies</p>
+                </div>
+                <div class="scenario-card beginner">
+                    <div class="scenario-header">
+                        <span class="scenario-badge">Beginner</span>
+                        <span class="scenario-time">240s</span>
+                    </div>
+                    <h3>Network Latency Spike</h3>
+                    <p>Debug slow response times and network issues</p>
+                </div>
+                <div class="scenario-card beginner">
+                    <div class="scenario-header">
+                        <span class="scenario-badge">Beginner</span>
+                        <span class="scenario-time">240s</span>
+                    </div>
+                    <h3>CPU Stress Response</h3>
+                    <p>Scale resources under pressure</p>
+                </div>
+                <div class="scenario-card intermediate">
+                    <div class="scenario-header">
+                        <span class="scenario-badge">Intermediate</span>
+                        <span class="scenario-time">300s</span>
+                    </div>
+                    <h3>Memory Leak Mitigation</h3>
+                    <p>Handle OOMKilled errors and resource limits</p>
+                </div>
+                <div class="scenario-card advanced">
+                    <div class="scenario-header">
+                        <span class="scenario-badge">Advanced</span>
+                        <span class="scenario-time">360s</span>
+                    </div>
+                    <h3>Network Partition Recovery</h3>
+                    <p>Restore communication between isolated services</p>
+                </div>
+                <div class="scenario-card expert">
+                    <div class="scenario-header">
+                        <span class="scenario-badge">Expert</span>
+                        <span class="scenario-time">600s</span>
+                    </div>
+                    <h3>Cascade Failure Recovery</h3>
+                    <p>Handle multi-service failures with circuit breakers</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>KubeChaos</h4>
+                    <p>Terminal-driven Kubernetes chaos engineering training platform</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <a href="https://github.com/parzival92/KubeChoas">GitHub</a>
+                    <a href="https://github.com/parzival92/KubeChoas/issues">Report Issues</a>
+                    <a href="https://chaos-mesh.org">Chaos Mesh</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Built With</h4>
+                    <a href="https://chaos-mesh.org">Chaos Mesh</a>
+                    <a href="https://kind.sigs.k8s.io">kind</a>
+                    <a href="https://kubernetes.io">Kubernetes</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>MIT License • Built with ❤️ for SREs and DevOps Engineers</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function copyCode(button) {
+            const codeBlock = button.previousElementSibling;
+            const text = codeBlock.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
+        }
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
