@@ -155,7 +155,7 @@ class ChaosMeshClient:
                 "mode": config.get("mode", "one"),
                 "selector": config.get("selector", {}),
                 "duration": config.get("duration", "30s"),
-                "stressors": {
+                "stressors": config.get("stressors", {
                     "cpu": config.get("cpu", {
                         "workers": 1,
                         "load": 50
@@ -164,9 +164,14 @@ class ChaosMeshClient:
                         "workers": 1,
                         "size": "256MB"
                     }) if config.get("stress_memory") else None
-                }
+                })
             }
         }
+        
+        # Add value if mode is 'fixed' or 'fixed-percent'
+        if "value" in config:
+            body["spec"]["value"] = config["value"]
+        
         
         # Remove None values from stressors
         body["spec"]["stressors"] = {k: v for k, v in body["spec"]["stressors"].items() if v is not None}

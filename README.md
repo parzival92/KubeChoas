@@ -127,13 +127,16 @@ By playing KubeChaos, you'll learn:
 
 ## 🧪 Available Chaos Types
 
-- **PodChaos** - Pod failures, kills, container kills
-- **NetworkChaos** - Latency, packet loss, partitions
-- **StressChaos** - CPU and memory pressure
-- **IOChaos** - Disk I/O delays and failures
+- **PodChaos** - Pod failures, kills, container kills ✅ **Works in Kind**
+- **NetworkChaos** - Latency, packet loss, partitions ⚠️ Limited in Kind
+- **StressChaos** - CPU and memory pressure ⚠️ Limited in Kind
+- **IOChaos** - Disk I/O delays and failures ⚠️ Limited in Kind
 - **TimeChaos** - Clock skew injection
 - **DNSChaos** - DNS resolution errors
 - **HTTPChaos** - HTTP request/response manipulation
+
+> **⚠️ Environment Limitations**: When running with Kind (Kubernetes in Docker), only `PodChaos` scenarios work fully due to Chaos Mesh runtime detection limitations. For full scenario support, use Minikube or a cloud Kubernetes cluster. See [docs/ENVIRONMENT_LIMITATIONS.md](docs/ENVIRONMENT_LIMITATIONS.md) for details.
+
 
 ## 🤝 Contributing
 
